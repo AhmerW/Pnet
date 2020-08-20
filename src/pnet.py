@@ -1,12 +1,25 @@
 from sys import exit as terminate
 from gui.first import MainWindow
 from tools.connections import Connections
+from tools.events import Events
 
 class pnet(MainWindow):
     connect_texts = {1: 'Connect', 0: 'Disconnect'}
+    def updateStatus(self, total=0):
+        self.label_total.configure(text="Total connections established: {0}".format(total))
+
     def onClick(self, button):
         print(button)
-        if button == 'Connect':
+        if button == 'file_sharing':
+            try:
+                self.event.fileWindow()
+            except AttributeError as e:
+                if not hasattr(self, 'event'):
+                    self.event = Events(self)
+                    self.onClick(button)
+                else:
+                    raise e
+        elif button == 'Connect':
             try:
                 where = self.buttons.index(button)
                 self.connected = not self.connected
@@ -25,13 +38,15 @@ class pnet(MainWindow):
                     self.connector.connect()
                 else:
                     self.first = False
-                #self.update()
+                self.updateStatus()
             except ValueError:
                 return
-            except AttributeError:
+            except AttributeError as e:
                 if not hasattr(self, 'connector'):
-                    self.connector = Connections()
+                    self.connector = Connections(self)
                     self.onClick(button)
+                else:
+                    raise e
     def onClose(self):
         if self.connected:
             self.onClick('connect')
@@ -42,5 +57,7 @@ class pnet(MainWindow):
 
 if __name__ == "__main__":
     network = pnet()
-    network.connector = Connections()
+    network.total = 0
+    network.connector = Connections(network)
+    network.event = Events(network)
     network.start()

@@ -6,17 +6,17 @@ class MainWindow(window.ThemedTk):
     def __init__(self, *args, **kwargs):
         ## window objects ##
         window.ThemedTk.__init__(self, *args, **kwargs)
-        self.width, self.height = 800, 600
+        self.width, self.height = 900, 600
         self.first = True
 
-        ## configure window ## s
+        ## configure window ## 
         self.protocol("WM_DELETE_WINDOW", self.onClose)
         self.geometry("{0}x{1}".format(self.width, self.height))
         self.title("Pnet")
         self.set_theme("radiance")
 
         ## data ##
-        self.buttons = ['Connect', 'chat', 'file sharing']
+        self.buttons = ['Connect', 'chat', 'file sharing', 'create a connection']
         self.button_objects = []
         self.connected = False
 
@@ -51,6 +51,9 @@ class MainWindow(window.ThemedTk):
 
         self.label_connect = ttk.Label(self.tab_status, text="Disconnected from the network")
         self.label_connect.pack(anchor="w")
+
+        self.label_total = ttk.Label(self.tab_status, text="Total connections established: 0")
+        self.label_total.pack(anchor="w")
 
         ## settings tab ##
         self.tab_settings = ttk.Frame(self.tab, width=self.width, height=100)
