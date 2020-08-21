@@ -1,7 +1,7 @@
 from sys import exit as terminate
+from tools.events import Events
 from gui.first import MainWindow
 from tools.connections import Connections
-from tools.events import Events
 
 class pnet(MainWindow):
     connect_texts = {1: 'Connect', 0: 'Disconnect'}
@@ -10,7 +10,7 @@ class pnet(MainWindow):
 
     def onClick(self, button):
         print(button)
-        if button == 'file_sharing':
+        if button == 'File':
             try:
                 self.event.fileWindow()
             except AttributeError as e:
@@ -35,7 +35,7 @@ class pnet(MainWindow):
                     "to" if text[0] == "C" else "from"
                 ))
                 if not self.first:
-                    self.connector.connect()
+                    self.connector.listen()
                 else:
                     self.first = False
                 self.updateStatus()

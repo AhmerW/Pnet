@@ -1,6 +1,7 @@
 import socket
 import threading
 from tools.database.cdb import Cdb
+from tools.dialogs import SimpleDialogs
 
 class Listener(threading.Thread):
     def __init__(self, con, db, pnet):
@@ -11,7 +12,7 @@ class Listener(threading.Thread):
         self.db = db
         self.connections_count = 0
 
-    def processClient(self, client):
+    def handleClient(self, client):
         pass
 
     def run(self):
@@ -23,7 +24,7 @@ class Listener(threading.Thread):
                 self.db.addIp(addr[0], addr[1])
                 self.connections_count += 1
                 threading.Thread(
-                    target=self.processClient,
+                    target=self.handleClient,
                     args=(obj,)
                 ).start()
                 self.pnet.updateStatus(self.connections_count)
@@ -51,9 +52,7 @@ class Connections():
             self.listener.stop()
             if self.bindd:
                 self.connection.close()
-        except OSError:
-            return
-        except AttributeError:
+        except (OSError, AttributeError):
             return
 
     def attemptBind(self):
@@ -64,7 +63,7 @@ class Connections():
             self.port += 1
             self.attemptBind()
 
-    def connect(self):
+    def listen(self):
         if self.connected:
             self.connected = False
             self.listener.stop()
@@ -74,6 +73,10 @@ class Connections():
         self.listener.start()
         #print("Listener started on ip {0} and port {1}".format(self.ip, self.port))
 
-
-    def listen(self):
-        pass
+    def connect(self, hostname):
+        if not self.db.resolveFromIp(hostname):
+            if len(hostname) == self.pnet.uid_len:
+                text = "Cant resolve IP from user ID. You can't connect via User ID before connecting through the IP address at least once."
+            else:
+                text = "An error accured"
+            return SimpleDialogs().warning("Error", text)

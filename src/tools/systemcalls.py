@@ -3,7 +3,6 @@ from tkinter import Tk, Label
 from functools import lru_cache
 from tkinter.filedialog import askopenfilename, asksaveasfilename
 
-
 class SystemCalls:
     def __init__(self):
         pass

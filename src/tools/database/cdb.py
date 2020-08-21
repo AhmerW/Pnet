@@ -13,4 +13,6 @@ class Cdb():
         self.connections[str(ip)] = str(uid)
 
     def resolveFromIp(self, ip):
-        pass
+        if ip in self.connections:
+            return self.connections[ip]
+        return False
