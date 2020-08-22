@@ -2,6 +2,7 @@ import os
 import json
 import string
 import secrets
+from tools.security.gen import randstr
 
 class Network():
     def __init__(self):
@@ -14,11 +15,7 @@ class Network():
         choices = self.getChoices()
         if self.strength <= 0:
             return False
-        return ''.join(
-            secrets.choice(
-                choices
-            ) for _ in range(0, self.strength, 1)
-        )
+        return randstr(self.strength, choices)
 
     def getChoices(self):
         choices = ""

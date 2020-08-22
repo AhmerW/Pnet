@@ -145,33 +145,42 @@ class MainWindow(window.ThemedTk):
         self.tab_settings.pack(fill="both", expand=1, anchor="se")
         self.tab.add(self.tab_settings, text="Settings")
 
+        ## Frames ##
+        ttk.Style().configure("Frame1.TFrame")
+
+        frame_left = ttk.Frame(self.tab_settings, height=600, width=200, style="Frame1.TFrame")
+        frame_left.pack(anchor="n", side="left", fill="y")
+
+        frame_right = ttk.Frame(self.tab_settings, height=600, width=200, style="Frame1.TFrame")
+        frame_right.pack(anchor="n", side="right", fill="y")
+
         ## combination button
         self.button_combinations = ttk.Button(
-            self.tab_settings,
+            frame_left,
             text="Code combination settings",
             command=self.network.savePaths
         ).pack(anchor="sw")
 
         ## save button
         self.buton_path_save = ttk.Button(
-            self.tab_settings,
+            frame_left,
             text="Save files for next time"
         ).pack(anchor="sw")
 
         ## reset button
         self.button_path_reset = ttk.Button(
-            self.tab_settings,
+            frame_left,
             text="Forget all saved files"
         ).pack(anchor="sw")
 
         ## save uid checkbox
         self.checkbox_save_uid_state = tk.IntVar()
         self.checkbox_save_uid = ttk.Checkbutton(
-            self.tab_settings,
+            frame_right,
             text="Save user ID for next time",
             variable=self.checkbox_save_uid_state,
             command=lambda : None
-        ).pack(anchor="sw")
+        ).pack(anchor="se")
 
         ## list of saved button
         def _showl():
@@ -187,16 +196,25 @@ class MainWindow(window.ThemedTk):
             ).pack()
 
         self.button_list = ttk.Button(
-            self.tab_settings,
+            frame_left,
             text="List of user ids saved in cache. (Previous connections)",
             command = lambda : SimpleDialogs().warning("Error", "No user ids saved in cache") \
                     if not self.connector.db.connections else _showl() if self.showl_run else None
         ).pack(anchor="sw")
 
+
+
+        ## current listening ip ##
+        l1 = ttk.Label(frame_right, text="Listening IP").pack(anchor="ne")
+
+        self.entry_ip = ttk.Entry(frame_right)
+        self.entry_ip.pack(anchor="ne")
+        self.entry_ip.insert(0, "127.0.0.1")
+
         ## current listening port ##
-        ttk.Label(self.tab_settings, text="Listening port").pack(anchor="sw")
-        self.entry_port = ttk.Entry(self.tab_settings)
-        self.entry_port.pack(anchor="sw")
+        ttk.Label(frame_right, text="Listening port").pack(anchor="ne")
+        self.entry_port = ttk.Entry(frame_right)
+        self.entry_port.pack(anchor="e")
         self.entry_port.insert(0, "9989")
 
 

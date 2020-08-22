@@ -1,6 +1,8 @@
 import socket
 import threading
 import tkinter as tk
+from tkinter import ttk
+from security.gen import randstr
 from tools.database.cdb import Cdb
 from tools.dialogs import SimpleDialogs
 from tools.systemcalls import SystemCalls
@@ -94,13 +96,126 @@ class FileTransfer(threading.Thread):
         self.db.addUid(self.uid, self.hostname)
         self.files = self.con.recv(4080).decode('utf-8')
 
-class Chat:
-    pass
+class Chat():
+    _md = {'start': 1, 'join': 0}
+    def __init__(self, mode, ip="localhsot"):
+        Super(Chat, self).__init__()
+        self.hostname, self.port = ip, 9992
+        self.mode = mode # start or join
+        self.code = None
+        self.running = False
+
+        ## objects ##
+        self.window = tk.ThemedTk()
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        ## data ##
+        self.clients = []
+        self.total = 0
+        self.max_connections = 1
+
+    def createWindow(self):
+        ## text field ##
+        self.textf = tk.Text(self.window)
+        self.textf.pack()
+
+        ## messages ##
+        self.messages = tk.StringVar()
+        self.inpf = ttk.Entry()
+
+
+
+    def addMsg(self):
+        pass
+
+    def start(self):
+        if not hasattr(self.sock, 'send'):
+            return
+        self.sock.send(self.code.encode('utf-8'))
+        res = self.sock.recv(2080).decode('utf-8')
+        if res == 'false':
+            self.sock.close()
+            return SimpleDialogs().warning(
+                "Error",
+                "Invalid chat room code '{0}'".format(self.code)
+            )
+
+    def sendToAll(self, msg):
+        if not isinstance(msg, bytes):
+            msg = msg.encode('utf-8')
+        for client in self.clients:
+            client.send(msg)
+
+
+    def listen(self):
+        self.sock.listen()
+        while self.running:
+            if self.max_connections <= self.total:
+                break
+            c, addr = self.sock.accept()
+            self.clients.append(c)
+            self.total += 1
+            print(addr)
+            threading.Thread(
+                target=self.handleClient,
+                args=(c,)
+            )
+        return
+
+    def handleClient(self, con):
+        connected = True
+        while connected:
+            try:
+                msg = con.recv(4080).decode('utf-8')
+                self.addMsg(msg)
+            except Exception as e:
+                print("disconnect ", e)
+                if hasattr(con, 'close'):
+                    con.close()
+                if con in self.clients:
+                    self.clients.remove(con)
+                connected = False
+
+    def run(self):
+        self.running = True
+        self.createWindow()
+        if Chat._md[self.mode]: # server
+            self.code = randstr(6)
+            self.sock.bind((self.hostname, self.port))
+            threading.Thread(target=self.listen).start()
+        else: # normal
+            def func(ip, port, code):
+                try:
+                    self.code = code
+                    port = int(port) if port.isdigit() else self.port
+                    self.sock.connect((ip, port))
+                    self.start()
+                except Exception as e:
+                    return SimpleDialogs().warning(
+                        "Error",
+                        "Could not connect on {0}, {1}.\n\n[Error Code {2}]".format(
+                            ip,
+                            port,
+                            e.__class__.__name__
+                        )
+                    )
+            Dialogs().createIputs(
+                func,
+                "Connect",
+                [
+                    {"label": "Type in the host IP address or User ID", "entry": " "},
+                    {"label": "Type in the host PORT. Defaults to 9989", "entry": "9989"},
+                    {"label": "Type in the chat room code", "entry": " "}
+                ]
+            )
+
+
+        self.window.mainloop()
 
 class Connections():
     def __init__(self, pnet):
         self.pnet = pnet
-        self.ip, self.port = '127.0.0.1', 9989
+        self.ip, self.port = self.pnet.entry_ip.get(), 9989
         self.connected = False
         self.bindd = False
         ## objects ##

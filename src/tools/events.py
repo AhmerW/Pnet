@@ -1,9 +1,11 @@
 import os
 import tkinter as tk
 from tkinter import ttk
+from functools import partial
 from tkinter.filedialog import askopenfilename
+from tools.connections import Chat
 from tools.systemcalls import SystemCalls
-from tools.dialogs import SimpleDialogs
+from tools.dialogs import SimpleDialogs, Dialogs
 
 
 
@@ -18,8 +20,7 @@ class Events:
         if button == 'file_share':
             path = self.sysc.askPath()
             if not path:
-                path = "Failed to get path"
-                self.l1.configure(text=path)
+                SimpleDialogs().warning("Error", "Failed to get path")
                 return
             res = SimpleDialogs().question(
             "Confirm", "You sure you want to share this file? {0}\nAn unique code will be generated which you can share to others.\nAnyone who knows your ip address and the code can download this file.".format(
@@ -31,67 +32,56 @@ class Events:
             self.pnet.network.addFile(path)
             print(self.pnet.network.paths)
         elif button == 'file_download':
-            ## window ##
-            win = tk.Tk()
-            ## ip ##
-            ttk.Label(win, text="Type in the host IP address or User ID").pack()
-            e1 = ttk.Entry(win)
-            e1.pack(fill="x")
-            ## port ##
-            ttk.Label(win, text="Type in the host PORT. Defaults to 9989").pack()
-            e2 = ttk.Entry(win)
-            e2.insert(0, "9989")
-            e2.pack(fill="x")
+            def func(*args):
+                self.pnet.connector.connect(*args)
 
-            def func():
-                self.pnet.connector.connect(e1.get(), e2.get())
-                win.destroy()
-            ttk.Button(win, text="Connect", command=func).pack()
+            Dialogs().createIputs(
+                func,
+                "Connect",
+                [
+                    {"label": "Type in the host IP address or User ID", "entry": " "},
+                    {"label": "Type in the host PORT. Defaults to 9989", "entry": "9989"}
+                ]
+            )
+        elif button == 'chat_join':
+            Chat('join', self.pnet.entry_ip.get())
+        elif button == 'chat_create':
+            Chat('start', self.pnet.entry_ip.get())
+
+    def mainWindow(self, buttons : dict):
+        top = tk.Toplevel(self.pnet)
+        top.geometry("500x500")
+        top.resizable(0, 0)
+
+
+        ## create buttons ##
+        for name, arg in buttons.items():
+            b = ttk.Button(
+                top,
+                text=name,
+                command = partial(self.onClick_event, arg)
+            ).pack(anchor="n", side="top", fill="both")
+
+
+
+        ## exit button ##
+        ex_st = ttk.Style().configure('exit.TButton',foreground='red')
+        button_exit = ttk.Button(top, style='exit.TButton', text="Exit", command=top.destroy, width=30)
+        button_exit.pack(side="right", anchor="se")
+        top.mainloop()
 
     def fileWindow(self):
-        top = tk.Toplevel(self.pnet)
-        top.geometry("500x500")
-        top.resizable(0, 0)
-        ypos = 0
-
-
-        ## share a file buton ##
-        b1 = ttk.Button(top, text="share a file", command=lambda : self.onClick_event("file_share"))
-        b1.pack(anchor="n", side="top", fill="both")
-
-        self.l1 = ttk.Label(top, text="")
-        self.l1.pack(anchor="center")
-        self.l1.place(x=190, y=40)
-
-        ## download a file button
-        b2 = ttk.Button(top, text="Download a file", command=lambda : self.onClick_event("file_download"))
-        b2.pack(anchor="n", side="top", fill="both")
-
-
-        ## exit button ##
-        ex_st = ttk.Style().configure('exit.TButton',foreground='red')
-        button_exit = ttk.Button(top, style='exit.TButton', text="Exit", command=top.quit, width=30)
-        button_exit.pack(side="right", anchor="se")
-        top.mainloop()
+        self.mainWindow(
+            {
+                'Share a file': 'file_share',
+                'Download a file': 'file_download'
+            }
+        )
 
     def chatWindow(self):
-        top = tk.Toplevel(self.pnet)
-        top.geometry("500x500")
-        top.resizable(0, 0)
-
-
-        ## share a file buton ##
-        b1 = ttk.Button(top, text="Create a chat", command=lambda : self.onClick_event("chat_create"))
-        b1.pack(anchor="n", side="top", fill="both")
-
-
-        ## download a file button
-        b2 = ttk.Button(top, text="Join a chat", command=lambda : self.onClick_event("chat_join"))
-        b2.pack(anchor="n", side="top", fill="both")
-
-
-        ## exit button ##
-        ex_st = ttk.Style().configure('exit.TButton',foreground='red')
-        button_exit = ttk.Button(top, style='exit.TButton', text="Exit", command=top.quit, width=30)
-        button_exit.pack(side="right", anchor="se")
-        top.mainloop()
+        self.mainWindow(
+            {
+                'Create a chat room': 'chat_create',
+                'Join a chat room': 'chat_join'
+            }
+        )
