@@ -4,26 +4,19 @@ from gui.first import MainWindow
 from tools.connections import Connections
 
 class pnet(MainWindow):
-    connect_texts = {1: 'Connect', 0: 'Disconnect'}
+    connect_texts = {0: 'Connect', 1: 'Disconnect'}
     def updateStatus(self, total=0):
         self.label_total.configure(text="Total connections established: {0}".format(total))
 
     def onClick(self, button):
-        print(button)
         if button == 'File':
-            try:
-                self.event.fileWindow()
-            except AttributeError as e:
-                if not hasattr(self, 'event'):
-                    self.event = Events(self)
-                    self.onClick(button)
-                else:
-                    raise e
+            self.event.fileWindow()
+        elif button == 'Chat':
+            self.event.chatWindow()
         elif button == 'Connect':
             try:
                 where = self.buttons.index(button)
                 self.connected = not self.connected
-                print(self.connected)
 
                 text = pnet.connect_texts[int(self.connected)]
                 self.button_objects[where].configure(text=text)
@@ -34,10 +27,7 @@ class pnet(MainWindow):
                     text+"ed",
                     "to" if text[0] == "C" else "from"
                 ))
-                if not self.first:
-                    self.connector.listen()
-                else:
-                    self.first = False
+                self.connector.listen()
                 self.updateStatus()
             except ValueError:
                 return
@@ -52,7 +42,10 @@ class pnet(MainWindow):
             self.onClick('connect')
         if hasattr(self.connector, 'listener'):
             del self.connector.listener
-            self.connector.connection.close()
+            self.connector.con.close()
+        if hasattr(self.connector.connection, 'con'):
+            self.connector.connection.con.close()
+
         terminate()
 
 if __name__ == "__main__":

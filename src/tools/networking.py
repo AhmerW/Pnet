@@ -23,7 +23,7 @@ class Network():
     def getChoices(self):
         choices = ""
         if self.uppercase:
-            choices += string.ascii_lowercase
+            choices += string.ascii_uppercase
         if self.lowercase:
             choices += string.ascii_lowercase
         if self.digits:

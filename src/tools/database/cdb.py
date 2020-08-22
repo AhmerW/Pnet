@@ -9,10 +9,10 @@ class Cdb():
     def saveConnections(self):
         pass
 
-    def addIp(self, ip, uid):
-        self.connections[str(ip)] = str(uid)
+    def addUid(self, uid, ip):
+        self.connections[str(uid)] = str(ip)
 
-    def resolveFromIp(self, ip):
-        if ip in self.connections:
-            return self.connections[ip]
+    def resolveFromUid(self, uid):
+        if uid in self.connections:
+            return self.connections[uid]
         return False
