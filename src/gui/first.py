@@ -1,11 +1,11 @@
 import string
-import secrets
 import pyperclip
 import tkinter as tk
 from tkinter import ttk
 from ttkthemes import themed_tk as window
 from tools.dialogs import SimpleDialogs
 from tools.networking import Network
+from tools.security.gen import randstr
 
 PATHMENUTEXT = \
 """
@@ -30,7 +30,6 @@ class Table:
                  e.insert(tk.END, table[i][j])
                  e.configure(state=tk.DISABLED)
                  if copy and i != 0 and j == 0:
-                     print(table[i][j])
                      e.bind(
                         '<Button-1>', lambda *a, **kw : pyperclip.copy(
                             table[i][j]
@@ -46,7 +45,7 @@ class MainWindow(window.ThemedTk):
         self.width, self.height = 900, 600
         self.first = True
         self.uid_len = 12
-        self.uid = MainWindow.generateId(self.uid_len) ## option to save later so
+        self.uid = randstr(self.uid_len, string.digits) ## option to save later so
 
         ## configure window ##
         self.protocol("WM_DELETE_WINDOW", self.onClose)
@@ -57,6 +56,7 @@ class MainWindow(window.ThemedTk):
         ## data ##
         self.buttons = ['Connect', 'Chat', 'File', 'Create a connection']
         self.button_objects = []
+        self.chats = []
         self.connected = False
         self.showl_run = True
 
@@ -72,9 +72,6 @@ class MainWindow(window.ThemedTk):
         l.pack(anchor="s", side="bottom")
         l.place(y=350)
 
-    @staticmethod
-    def generateId(l=12):
-        return ''.join(secrets.choice(str(string.digits)) for _ in range(l))
 
     def onClose(self):
         pass

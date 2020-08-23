@@ -43,10 +43,11 @@ class Events:
                     {"label": "Type in the host PORT. Defaults to 9989", "entry": "9989"}
                 ]
             )
-        elif button == 'chat_join':
-            Chat('join', self.pnet.entry_ip.get())
-        elif button == 'chat_create':
-            Chat('start', self.pnet.entry_ip.get())
+        elif button.startswith('chat'):
+            c = Chat(button.split('_')[-1], self.pnet.entry_ip.get())
+            self.pnet.chats.append(c)
+            c.run()
+
 
     def mainWindow(self, buttons : dict):
         top = tk.Toplevel(self.pnet)
@@ -81,7 +82,7 @@ class Events:
     def chatWindow(self):
         self.mainWindow(
             {
-                'Create a chat room': 'chat_create',
+                'Create a chat room': 'chat_start',
                 'Join a chat room': 'chat_join'
             }
         )

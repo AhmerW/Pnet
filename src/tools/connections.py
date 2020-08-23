@@ -2,9 +2,9 @@ import socket
 import threading
 import tkinter as tk
 from tkinter import ttk
-from security.gen import randstr
 from tools.database.cdb import Cdb
-from tools.dialogs import SimpleDialogs
+from tools.security.gen import randstr
+from tools.dialogs import SimpleDialogs, Dialogs
 from tools.systemcalls import SystemCalls
 
 class Listener(threading.Thread):
@@ -99,34 +99,73 @@ class FileTransfer(threading.Thread):
 class Chat():
     _md = {'start': 1, 'join': 0}
     def __init__(self, mode, ip="localhsot"):
-        Super(Chat, self).__init__()
+        #Super(Chat, self).__init__()
         self.hostname, self.port = ip, 9992
         self.mode = mode # start or join
         self.code = None
         self.running = False
 
         ## objects ##
-        self.window = tk.ThemedTk()
+        self.window = tk.Tk()
+        self.window.deiconify()
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         ## data ##
+        self.username = 'Anonymous'
         self.clients = []
         self.total = 0
         self.max_connections = 1
 
+
     def createWindow(self):
+
+
         ## text field ##
         self.textf = tk.Text(self.window)
-        self.textf.pack()
+        self.textf.pack(expand=True, fill="both")
+        self.textf.configure(state=tk.DISABLED)
 
-        ## messages ##
+        ## message entry ##
         self.messages = tk.StringVar()
-        self.inpf = ttk.Entry()
+        self.inpf = ttk.Entry(self.window, text=self.messages)
+        self.inpf.pack(side="bottom", fill="x")
+        self.inpf.focus()
+
+        ## scrollbar ##
+        self.scrollb = ttk.Scrollbar(self.textf)
+        self.scrollb.pack(side="right", fill="y")
+        self.scrollb.config(command=self.textf.yview)
+        self.textf.configure(yscrollcommand=self.scrollb.set)
+
+        ## frame window ##
+        self.frame = ttk.Frame(self.window)
+        self.inpf.bind(
+            "<Return>", lambda *a : self.addMsg(
+                '[{0}] {1}'.format(self.username, self.inpf.get()),
+                True
+                )
+        )
+        self.frame.pack()
+
+    def addMsg(self, msg, send=True):
+        if ':&:' in msg:
+            username = msg.split(':&:')[0]
+            if username == '' or username == ' ' or not username:
+                username = 'Anonymous'
+            msg = '[{0}] {1}'.format(username, msg[len(username)+3:-1])
 
 
+        ## configure text field ##
+        self.textf.configure(state=tk.NORMAL)
+        self.textf.insert(tk.INSERT, '{0}\n'.format(msg))
 
-    def addMsg(self):
-        pass
+        self.inpf.delete(0, tk.END)
+        self.textf.configure(state=tk.DISABLED)
+        self.textf.see(tk.END)
+
+        if send:
+            self.sendToAll(msg)
 
     def start(self):
         if not hasattr(self.sock, 'send'):
@@ -140,34 +179,39 @@ class Chat():
                 "Invalid chat room code '{0}'".format(self.code)
             )
 
-    def sendToAll(self, msg):
+    def sendToAll(self, msg, c = None):
         if not isinstance(msg, bytes):
             msg = msg.encode('utf-8')
         for client in self.clients:
-            client.send(msg)
+            if client != self.sock and client != c:
+                client.send(msg)
 
 
     def listen(self):
-        self.sock.listen()
-        while self.running:
-            if self.max_connections <= self.total:
-                break
-            c, addr = self.sock.accept()
-            self.clients.append(c)
-            self.total += 1
-            print(addr)
-            threading.Thread(
-                target=self.handleClient,
-                args=(c,)
-            )
-        return
+        try:
+            self.sock.listen()
+            while self.running:
+                if self.max_connections <= self.total:
+                    break
+                c, addr = self.sock.accept()
+                self.clients.append(c)
+                self.total += 1
+                print(addr)
+                threading.Thread(
+                    target=self.handleClient,
+                    args=(c,)
+                ).start()
+            return
+        except OSError:
+            return
 
     def handleClient(self, con):
         connected = True
         while connected:
             try:
                 msg = con.recv(4080).decode('utf-8')
-                self.addMsg(msg)
+                self.addMsg(msg, send=False)
+                self.sendToAll(msg, con)
             except Exception as e:
                 print("disconnect ", e)
                 if hasattr(con, 'close'):
@@ -177,15 +221,30 @@ class Chat():
                 connected = False
 
     def run(self):
+        def closed():
+            print("Closed")
+            self.window.title("Chat room - Code: {0}".format(self.code))
+            self.window.mainloop()
+
         self.running = True
         self.createWindow()
         if Chat._md[self.mode]: # server
+            def func(username):
+                self.username = username
+            Dialogs(onclose=closed).createIputs(
+                func,
+                "start",
+                [
+                    {"label": "Enter an username", "entry": " "}
+                ],
+            )
             self.code = randstr(6)
             self.sock.bind((self.hostname, self.port))
             threading.Thread(target=self.listen).start()
         else: # normal
-            def func(ip, port, code):
+            def func(ip, port, code, username):
                 try:
+                    self.username = userame
                     self.code = code
                     port = int(port) if port.isdigit() else self.port
                     self.sock.connect((ip, port))
@@ -199,18 +258,19 @@ class Chat():
                             e.__class__.__name__
                         )
                     )
-            Dialogs().createIputs(
+            Dialogs(onclose=closed).createIputs(
                 func,
                 "Connect",
                 [
                     {"label": "Type in the host IP address or User ID", "entry": " "},
                     {"label": "Type in the host PORT. Defaults to 9989", "entry": "9989"},
-                    {"label": "Type in the chat room code", "entry": " "}
-                ]
+                    {"label": "Type in the chat room code", "entry": " "},
+                    {"label": "Enter an username", "entry": " "}
+                ],
             )
 
 
-        self.window.mainloop()
+
 
 class Connections():
     def __init__(self, pnet):

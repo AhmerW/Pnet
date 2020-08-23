@@ -45,6 +45,9 @@ class pnet(MainWindow):
             self.connector.con.close()
         if hasattr(self.connector.connection, 'con'):
             self.connector.connection.con.close()
+        for chat in self.chats:
+            if hasattr(chat, 'sock'):
+                chat.sock.close()
 
         terminate()
 

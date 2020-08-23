@@ -4,9 +4,15 @@ from tkinter import ttk
 from tkinter import messagebox as mb
 
 class Dialogs(tk.Tk):
-    def __init__(self, title="Dialog", *args, **kwargs):
+    def __init__(self, title="Dialog", onclose=None, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
         self.title(title)
+        self.onclose = onclose
+        self.protocol("WM_DELETE_WINDOW", self.onClose)
+    def onClose(self):
+        if callable(self.onclose):
+            self.onclose()
+        self.destroy()
 
     def createIputs(self, func : typing.Callable, btext : str, data : typing.List[dict]) -> None:
         entries = []
@@ -27,8 +33,7 @@ class Dialogs(tk.Tk):
             self,
             text = btext,
             command = call
-        ).pack()
-
+        ).pack
         self.mainloop()
 
 class SimpleDialogs(tk.Tk):
