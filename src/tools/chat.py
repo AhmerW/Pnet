@@ -174,7 +174,7 @@ class Chat(threading.Thread):
         self.running = True
         def func(username):
             self.username = username
-        if MD[self.mode]: 
+        if MD[self.mode]:
             Dialogs(onclose=closed).createIputs(
                 func,
                 "start",
@@ -207,7 +207,7 @@ class Chat(threading.Thread):
 
                     )
 
-
+                
             Dialogs(onclose=closed).createIputs(
                 func,
                 "Connect",
