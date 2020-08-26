@@ -3,16 +3,18 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox as mb
 
-class Dialogs(tk.Tk):
+class Dialogs(tk.Toplevel):
     def __init__(self, title="Dialog", onclose=None, *args, **kwargs):
-        tk.Tk.__init__(self, *args, **kwargs)
+        tk.Toplevel.__init__(self, *args, **kwargs)
         self.title(title)
         self.onclose = onclose
         self.protocol("WM_DELETE_WINDOW", self.onClose)
     def onClose(self):
+
+        self.destroy()
         if callable(self.onclose):
             self.onclose()
-        self.destroy()
+        print("quit")
 
     def createIputs(self, func : typing.Callable, btext : str, data : typing.List[dict]) -> None:
         entries = []
@@ -26,14 +28,16 @@ class Dialogs(tk.Tk):
                 entries.append(e)
 
         def call():
-            func(*list(map(lambda i : i.get().lower(), entries)))
-            self.destroy()
+            func(*list(map(lambda i : i.get().strip(), entries)))
+            self.onClose()
 
         ttk.Button(
             self,
             text = btext,
             command = call
-        ).pack
+        ).pack()
+        return self
+    def run(self):
         self.mainloop()
 
 class SimpleDialogs(tk.Tk):

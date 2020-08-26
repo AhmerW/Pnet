@@ -3,7 +3,7 @@ import tkinter as tk
 from tkinter import ttk
 from functools import partial
 from tkinter.filedialog import askopenfilename
-from tools.connections import Chat
+from tools.chat import Chat
 from tools.systemcalls import SystemCalls
 from tools.dialogs import SimpleDialogs, Dialogs
 
