@@ -4,9 +4,9 @@ from tkinter import ttk
 from functools import partial
 from tkinter.filedialog import askopenfilename
 from tools.chat import Chat
+from tools.pcn import PriateConnection
 from tools.systemcalls import SystemCalls
 from tools.dialogs import SimpleDialogs, Dialogs
-
 
 
 class Events:
@@ -29,8 +29,8 @@ class Events:
             )
             if res == 'no':
                 return
-            self.pnet.network.addFile(path)
-            print(self.pnet.network.paths)
+            code = self.pnet.network.addFile(path)
+            SimpleDialogs().success("Success", "Your file has been shared.\nOthers can now download the file if you're connected to the network.\n\nFile Code: {0}".format(code))
         elif button == 'file_download':
             def func(*args):
                 self.pnet.connector.connect(*args)
@@ -85,4 +85,13 @@ class Events:
                 'Create a chat room': 'chat_start',
                 'Join a chat room': 'chat_join'
             }
+        )
+    def privateConnection(self):
+        Dialogs(title="Connection details").createIputs(
+            lambda ip, port : PriateConnection(ip, port).start(),
+            "Connect",
+            [
+                {"label": "Enter ip address", "entry": " "},
+                {"label": "Port", "entry": "9989"}
+            ]
         )

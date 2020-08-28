@@ -8,13 +8,29 @@ from tools.dialogs import SimpleDialogs, Dialogs
 from tools.systemcalls import SystemCalls
 
 class Listener(threading.Thread):
-    def __init__(self, con, db, pnet):
+    def __init__(self, db, pnet):
         super(Listener, self).__init__()
         self.listening = True
         self.pnet = pnet
-        self.con = con
+        self.con = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.ip, self.port = self.pnet.entry_ip.get(), self.pnet.entry_port.get()
+        if self.port.isdigit():
+            self.port = int(self.port)
+        else:
+            self.port = 9989
+
         self.db = db
         self.connections_count = 0
+        self.attemptBind()
+
+    def attemptBind(self):
+        try:
+            self.con.bind((self.ip, self.port))
+            self.pnet.entry_port.delete(0, tk.END)
+            self.pnet.entry_port.insert(0, str(self.port))
+        except Exception:
+            self.port += 1
+            self.attemptBind()
 
     def handleFiletransfer(self, client):
         connected = True
@@ -34,14 +50,14 @@ class Listener(threading.Thread):
                         if not fdata:
                             client.send('false'.encode('utf-8'))
                             return
-                        if not isinstance(fdata, bytes):
-                            fdata = fdata.encode('utf-8')
                         amount = len(fdata)
                         client.send('true'.encode('utf-8'))
                         status = client.recv(2080).decode('utf-8')
                         if status == 'continue':
                             client.send(str(amount).encode('utf-8'))
                             for data in fdata:
+                                if not isinstance(data, bytes):
+                                    data = data.encode('utf-8')
                                 client.send(data)
 
 
@@ -50,6 +66,8 @@ class Listener(threading.Thread):
                 self.connections_count -= 1
                 self.pnet.updateStatus(self.con)
         return
+    def handlePrivateConnection(self, client):
+        pass
 
     def run(self):
         self.con.listen()
@@ -63,6 +81,16 @@ class Listener(threading.Thread):
                         target=self.handleFiletransfer,
                         args=(obj,)
                     ).start()
+                elif mode == 'private_connection':
+                    threading.Thread(
+                        target=self.handlePrivateConnection,
+                        args=(obj,)
+                    )
+                l = tk.Label(
+                    self.pnet.status_frame_right,
+                    text="New connection from {0}. Mode requested: {1}".format(addr, mode)
+                )
+                l.pack(side="right", anchor="n")
                 self.pnet.updateStatus(self.connections_count)
             except OSError:
                 break
@@ -101,13 +129,10 @@ class FileTransfer(threading.Thread):
 class Connections():
     def __init__(self, pnet):
         self.pnet = pnet
-        self.ip, self.port = self.pnet.entry_ip.get(), 9989
         self.connected = False
         self.bindd = False
         ## objects ##
-        self.con = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # listener connection
         self.connection = None # connection to someone object
-        self.attemptBind()
         self.db = Cdb()
         self.sysc = SystemCalls()
         self.listener = None
@@ -115,19 +140,9 @@ class Connections():
     def close(self):
         try:
             self.listener.stop()
-            if self.bindd:
-                self.con.close()
         except (OSError, AttributeError):
             return
 
-    def attemptBind(self):
-        try:
-            self.con.bind((self.ip, self.port))
-            self.pnet.entry_port.delete(0, tk.END)
-            self.pnet.entry_port.insert(0, str(self.port))
-        except Exception:
-            self.port += 1
-            self.attemptBind()
 
     def listen(self):
         if self.connected:
@@ -135,7 +150,7 @@ class Connections():
             self.listener.stop()
             return
         self.connected = True
-        self.listener = Listener(self.con, self.db, self.pnet)
+        self.listener = Listener(self.db, self.pnet)
         self.listener.start()
         #print("Listener started on ip {0} and port {1}".format(self.ip, self.port))
 

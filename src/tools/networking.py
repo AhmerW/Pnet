@@ -54,7 +54,9 @@ class Network():
         pass
 
     def addFile(self, path):
-        self.paths[self.generateCode()] = str(path)
+        code = self.generateCode()
+        self.paths[code] = str(path)
+        return code
 
 
     def getData(self, path):

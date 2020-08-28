@@ -2,6 +2,7 @@ import socket
 import threading
 import tkinter as tk
 from tkinter import ttk
+from tools.security.gen import  randstr
 from tools.dialogs import SimpleDialogs, Dialogs
 
 MD = {'start': 1, 'join': 0}
@@ -48,7 +49,7 @@ class Chat(threading.Thread):
         self.frame = ttk.Frame(self.window)
         def func(args):
             data = self.inpf.get()
-            if not data.strip()
+            if not data.strip():
                 return
             msg = '[{0}] {1}'.format(self.username, data)
             if not MD[self.mode]: # not server:
@@ -161,7 +162,7 @@ class Chat(threading.Thread):
                     self.clients.remove(con)
                 connected = False
 
-    def run(self):
+    def run(self, autocon = False, *args):
         def closed():
             ## create the window ##
             self.window = tk.Toplevel()
@@ -175,13 +176,17 @@ class Chat(threading.Thread):
         def func(username):
             self.username = username
         if MD[self.mode]:
-            Dialogs(onclose=closed).createIputs(
-                func,
-                "start",
-                [
-                    {"label": "Enter an username", "entry": " "}
-                ],
-            )
+            if autocon:
+                closed()
+                func(*args)
+            else:
+                Dialogs(onclose=closed).createIputs(
+                    func,
+                    "start",
+                    [
+                        {"label": "Enter an username", "entry": " "}
+                    ],
+                )
             self.code = randstr(6) # new code
             self.sock.bind((self.hostname, self.port)) # bind server
             threading.Thread(target=self.listen).start() # start listening
@@ -207,15 +212,18 @@ class Chat(threading.Thread):
 
                     )
 
-                
-            Dialogs(onclose=closed).createIputs(
-                func,
-                "Connect",
-                [
-                    {"label": "Type in the host IP address or User ID", "entry": " "},
-                    {"label": "Type in the host PORT. Defaults to 9989", "entry": "9992"},
-                    {"label": "Type in the chat room code", "entry": " "},
-                    {"label": "Enter an username", "entry": " "}
-                ],
-            )
+            if autocon:
+                closed()
+                func(*args)
+            else:
+                Dialogs(onclose=closed).createIputs(
+                    func,
+                    "Connect",
+                    [
+                        {"label": "Type in the host IP address or User ID", "entry": " "},
+                        {"label": "Type in the host PORT. Defaults to 9989", "entry": "9992"},
+                        {"label": "Type in the chat room code", "entry": " "},
+                        {"label": "Enter an username", "entry": " "}
+                    ],
+                )
             return

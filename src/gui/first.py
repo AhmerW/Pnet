@@ -51,7 +51,6 @@ class MainWindow(window.ThemedTk):
         self.protocol("WM_DELETE_WINDOW", self.onClose)
         self.geometry("{0}x{1}".format(self.width, self.height))
         self.title("Pnet")
-        self.set_theme("radiance")
 
         ## data ##
         self.buttons = ['Connect', 'Chat', 'File', 'Create a connection']
@@ -60,6 +59,8 @@ class MainWindow(window.ThemedTk):
         self.connected = False
         self.showl_run = True
 
+        self.current = "radiance"
+        self.set_theme(self.current)
 
         ## call methods ##
         self.createMenu()
@@ -84,6 +85,21 @@ class MainWindow(window.ThemedTk):
 
     def onLeave(self, button):
         pass
+    def changeTheme(self):
+        top = tk.Toplevel()
+        ## holder
+        clicked = tk.StringVar()
+        clicked.set(self.current)
+        ## options
+        option = ttk.OptionMenu(top, clicked, *self.get_themes()).pack(expand=1)
+        def changed():
+            self.current = clicked.get()
+            self.set_theme(self.current)
+        ttk.Button(
+            top,
+            text="Change",
+            command = changed
+        ).pack(expand=1)
 
     def pathMenu(self):
         win = tk.Toplevel(self)
@@ -100,6 +116,7 @@ class MainWindow(window.ThemedTk):
 
     def createTab(self):
         ## tab widget  ##
+        ttk.Style().configure("Frame1.TFrame")
         self.tab = ttk.Notebook(self, width=self.width, height=200, name="settings")
         self.tab.pack(side="bottom", anchor="sw", fill="both")
 
@@ -107,20 +124,32 @@ class MainWindow(window.ThemedTk):
         ## status tab ##
         #----------------#
 
+
+
+
         self.tab_status = ttk.Frame(self.tab, width=self.width, height=1000)
         self.tab_status.pack(fill="both", expand=1, anchor="se")
         self.tab.add(self.tab_status, text="Status")
 
+        self.status_status = ttk.Frame(self.tab_status, height=20, width=600, style="Frame1.TFrame")
+        self.status_status.pack(anchor="s", side="bottom", fill="x")
+
+        self.status_frame_left = ttk.Frame(self.tab_status, height=600, width=200, style="Frame1.TFrame")
+        self.status_frame_left.pack(anchor="n", side="left", fill="y")
+
+        self.status_frame_right = ttk.Frame(self.tab_status, height=600, width=200, style="Frame1.TFrame")
+        self.status_frame_right.pack(anchor="n", side="right", fill="y")
+
         ## connect label ##
-        self.label_connect = ttk.Label(self.tab_status, text="Disconnected from the network")
+        self.label_connect = ttk.Label(self.status_frame_left, text="Disconnected from the network")
         self.label_connect.pack(anchor="w")
 
         ## total label ##
-        self.label_total = ttk.Label(self.tab_status, text="Total connections established: 0")
+        self.label_total = ttk.Label(self.status_frame_left, text="Total connections established: 0")
         self.label_total.pack(anchor="w")
 
         self.button_shared = ttk.Button(
-            self.tab_status,
+            self.status_frame_left,
             text="List of files shared",
             command = lambda : SimpleDialogs().warning("Error", "No files shared at the moment") if not self.network.paths else self.pathMenu()
         )
@@ -128,12 +157,12 @@ class MainWindow(window.ThemedTk):
 
         ## progress bar ##
         self.pb = ttk.Progressbar(
-            self.tab_status,
+            self.status_status,
             orient=tk.HORIZONTAL,
             mode="determinate",
             length=1000
         )
-        self.pb.pack(anchor="se", side="right")
+        self.pb.pack(fill="both")
 
         #----------------#
         ## settings tab ##
@@ -143,7 +172,6 @@ class MainWindow(window.ThemedTk):
         self.tab.add(self.tab_settings, text="Settings")
 
         ## Frames ##
-        ttk.Style().configure("Frame1.TFrame")
 
         frame_left = ttk.Frame(self.tab_settings, height=600, width=200, style="Frame1.TFrame")
         frame_left.pack(anchor="n", side="left", fill="y")
@@ -170,6 +198,8 @@ class MainWindow(window.ThemedTk):
             text="Forget all saved files"
         ).pack(anchor="sw")
 
+
+
         ## save uid checkbox
         self.checkbox_save_uid_state = tk.IntVar()
         self.checkbox_save_uid = ttk.Checkbutton(
@@ -191,6 +221,12 @@ class MainWindow(window.ThemedTk):
                 top,
                 text = '\n'.join(self.connector.db.connections.keys())
             ).pack()
+
+        self.change_theme = ttk.Button(
+            frame_left,
+            text="Change theme",
+            command=self.changeTheme
+        ).pack(anchor="sw")
 
         self.button_list = ttk.Button(
             frame_left,

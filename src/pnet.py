@@ -9,10 +9,13 @@ class pnet(MainWindow):
         self.label_total.configure(text="Total connections established: {0}".format(total))
 
     def onClick(self, button):
+
         if button == 'File':
             self.event.fileWindow()
         elif button == 'Chat':
             self.event.chatWindow()
+        elif button == 'Create_a_connection':
+            self.event.privateConnection()
         elif button == 'Connect':
             try:
                 where = self.buttons.index(button)
@@ -41,8 +44,8 @@ class pnet(MainWindow):
         if self.connected:
             self.onClick('connect')
         if hasattr(self.connector, 'listener'):
-            del self.connector.listener
-            self.connector.con.close()
+            if hasattr(self.connector.listener, 'close'):
+                self.connector.listener.con.close()
         if hasattr(self.connector.connection, 'con'):
             self.connector.connection.con.close()
         for chat in self.chats:
