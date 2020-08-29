@@ -2,7 +2,7 @@ import socket
 import threading
 import tkinter as tk
 from tkinter import ttk
-from tools.security.gen import  randstr
+from tools.security.gen import randstr
 from tools.dialogs import SimpleDialogs, Dialogs
 
 MD = {'start': 1, 'join': 0}
@@ -11,7 +11,7 @@ class Chat(threading.Thread):
     """Chat class for both server & client"""
     def __init__(self, mode, ip="localhsot"):
         super(Chat, self).__init__()
-        self.hostname, self.port = ip, 9992
+        self.hostname, self.port = ip, 9993
         self.mode = mode # start or join
         self.code = None
         self.running = False
@@ -37,7 +37,7 @@ class Chat(threading.Thread):
         ## message entry ##
         self.messages = tk.StringVar()
         self.inpf = ttk.Entry(self.window, text=self.messages)
-        self.inpf.pack(side="bottom", fill="x")
+
 
         ## scrollbar ##
         self.scrollb = ttk.Scrollbar(self.textf)
@@ -60,6 +60,19 @@ class Chat(threading.Thread):
 
         self.inpf.bind("<Return>", func)
         self.frame.pack()
+        if MD[self.mode]:
+            details = lambda : SimpleDialogs().success(
+                "Chat information",
+                "Listening IP: {0}\nListening Port: {1}\nYour username: {2}\nMaximum allowed connections: {3}\nTotal connected: {4}".format(
+                    self.hostname,
+                    self.port,
+                    self.username,
+                    self.max_connections,
+                    len(self.clients)
+                )
+            )
+            ttk.Button(self.window, text="Chat details", command=details).pack(side="bottom", fill="x")
+        self.inpf.pack(side="bottom", fill="x", ipady=20)
 
     def addMsg(self, msg):
         """Adds a new message into the text widget"""
@@ -126,7 +139,6 @@ class Chat(threading.Thread):
                 c, addr = self.sock.accept()
                 self.clients.append(c)
                 self.total += 1
-                print(addr)
                 threading.Thread(
                     target=self.handleClient,
                     args=(c,)
@@ -140,14 +152,15 @@ class Chat(threading.Thread):
         ## get data ##
         connected = True
         username, code = con.recv(2080).decode('utf-8').split('|')
-        print(username, code, self.code)
 
         ## validate code ##
         if not code.strip() == self.code.strip():
             con.send('false'.encode('utf-8'))
             return con.close()
         con.send('true'.encode('utf-8'))
-        self.addMsg("'{0}' has connected to this chat!".format(username))
+        msg = "'{0}' has connected to this chat!".format(username)
+        self.addMsg(msg)
+        self.sendToAll(msg)
 
         ## main loop ##
         while connected:
@@ -155,26 +168,34 @@ class Chat(threading.Thread):
                 msg = con.recv(4080).decode('utf-8')
                 self.addMsg(msg)
                 self.sendToAll(msg, con)
-            except Exception as e:
+            except Exception:
                 if hasattr(con, 'close'):
                     con.close()
                 if con in self.clients:
                     self.clients.remove(con)
                 connected = False
 
-    def run(self, autocon = False, *args):
+    def run(self, autocon : bool = False, *args):
         def closed():
             ## create the window ##
             self.window = tk.Toplevel()
             self.window.geometry("500x500")
             self.createWindow()
-            self.window.title("Chat room - Code: {0}".format(self.code))
+            self.window.title("Pnet chat room - Code: {0} | Your username: {1}".format(self.code, self.username))
             self.window.mainloop()
             return
+        def processUsername(username):
+            if len(username) >= 20:
+                username = username[0:19]
+            if not username.strip():
+                username = self.default
+            return username
+
 
         self.running = True
-        def func(username):
-            self.username = username
+        def func(maxc, username):
+            self.max_connections = int(maxc) if maxc.isdigit() else 1
+            self.username = processUsername(username)
         if MD[self.mode]:
             if autocon:
                 closed()
@@ -184,20 +205,27 @@ class Chat(threading.Thread):
                     func,
                     "start",
                     [
-                        {"label": "Enter an username", "entry": " "}
+                        {"label": "Maximum amount of people allowed in this chat", "entry": str(self.max_connections)},
+                        {"label": "Chose a username", "entry": " "}
                     ],
                 )
             self.code = randstr(6) # new code
-            self.sock.bind((self.hostname, self.port)) # bind server
+            try:
+                self.sock.bind((self.hostname, self.port)) # bind server
+            except Exception as e:
+                print("Exception ", e)
+                self.port += 1
+                self.run(True, self.max_connections, self.username)
             threading.Thread(target=self.listen).start() # start listening
 
             return
         else:
             def func(ip, port, code, username):
                 try:
-                    self.username = username
+                    self.username = processUsername(username)
                     self.code = code
                     port = int(port) if port.isdigit() else self.port
+
                     self.sock.connect((ip, port))
                     threading.Thread(target=self.start).start()
 
@@ -220,10 +248,10 @@ class Chat(threading.Thread):
                     func,
                     "Connect",
                     [
-                        {"label": "Type in the host IP address or User ID", "entry": " "},
-                        {"label": "Type in the host PORT. Defaults to 9989", "entry": "9992"},
+                        {"label": "Type in the host IP address or Host user-ID", "entry": " "},
+                        {"label": "Type in the host PORT. Defaults to 9989", "entry": "9993"},
                         {"label": "Type in the chat room code", "entry": " "},
-                        {"label": "Enter an username", "entry": " "}
+                        {"label": "Chose a username", "entry": " "}
                     ],
                 )
             return

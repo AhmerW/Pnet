@@ -2,24 +2,15 @@ import string
 import pyperclip
 import tkinter as tk
 from tkinter import ttk
+from functools import partial
 from ttkthemes import themed_tk as window
 from tools.dialogs import SimpleDialogs
 from tools.networking import Network
 from tools.security.gen import randstr
 
-PATHMENUTEXT = \
-"""
-Here is a list of all the files you have shared. If you want
-to download this file on another computer, then start
-with clicking the 'download a file' button under the file menu.
-Then type in the ip address or the username (if saved) in the input box.
-If that went alright then you can proceed with typing in the code
-which belongs to that filename. List of all codes and file paths (locations)
-are found below.
-"""
 
 class Table:
-    def __init__(self, window : tk.Tk, table : list, copy=True):
+    def __init__(self, window : tk.Tk, table : list, copy : bool = True):
         for i in range(len(table)):
             for j in range(len(table[0])):
                  if i == 0:
@@ -30,11 +21,7 @@ class Table:
                  e.insert(tk.END, table[i][j])
                  e.configure(state=tk.DISABLED)
                  if copy and i != 0 and j == 0:
-                     e.bind(
-                        '<Button-1>', lambda *a, **kw : pyperclip.copy(
-                            table[i][j]
-                        )
-                    )
+                     e.bind('<Button-1>', partial(pyperclip.copy, table[i][j]))
 
 
 class MainWindow(window.ThemedTk):
@@ -59,19 +46,21 @@ class MainWindow(window.ThemedTk):
         self.connected = False
         self.showl_run = True
 
-        self.current = "radiance"
+        self.theme_list = sorted(self.get_themes())
+        self.current = self.default_theme = "clam"
         self.set_theme(self.current)
 
         ## call methods ##
         self.createMenu()
         self.createTab()
         self.createOthers()
-        for button in self.buttons: self.createButton(button)
+        for button in self.buttons:
+            self.createButton(button)
 
         ## uid label ##
         l = ttk.Label(self, text="User ID: {0}".format(self.uid))
-        l.pack(anchor="s", side="bottom")
-        l.place(y=350)
+        l.pack(side="bottom", anchor="sw", expand=True)
+        #l.place(y=350)
 
 
     def onClose(self):
@@ -91,7 +80,8 @@ class MainWindow(window.ThemedTk):
         clicked = tk.StringVar()
         clicked.set(self.current)
         ## options
-        option = ttk.OptionMenu(top, clicked, *self.get_themes()).pack(expand=1)
+        ttk.Label(top, text="Pick a theme. Default theme: {0}".format(self.default_theme)).pack(expand=1, fill="both")
+        option = ttk.OptionMenu(top, clicked, *self.theme_list).pack(expand=1, fill="both")
         def changed():
             self.current = clicked.get()
             self.set_theme(self.current)
@@ -99,7 +89,7 @@ class MainWindow(window.ThemedTk):
             top,
             text="Change",
             command = changed
-        ).pack(expand=1)
+        ).pack(expand=1, fill="both")
 
     def pathMenu(self):
         win = tk.Toplevel(self)

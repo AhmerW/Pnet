@@ -14,11 +14,9 @@ class Dialogs(tk.Toplevel):
         self.destroy()
         if callable(self.onclose):
             self.onclose()
-        print("quit")
 
     def createIputs(self, func : typing.Callable, btext : str, data : typing.List[dict]) -> None:
         entries = []
-        print(data)
         for value in data:
             if value.get('label'):
                 ttk.Label(self, text=value['label']).pack()
@@ -39,7 +37,7 @@ class Dialogs(tk.Toplevel):
             self,
             text = btext,
             command = call
-        ).pack()
+        ).pack(fill="both")
         return self
     def run(self):
         self.mainloop()

@@ -3,7 +3,7 @@ from tools.events import Events
 from gui.first import MainWindow
 from tools.connections import Connections
 
-class pnet(MainWindow):
+class Pnet(MainWindow):
     connect_texts = {0: 'Connect', 1: 'Disconnect'}
     def updateStatus(self, total=0):
         self.label_total.configure(text="Total connections established: {0}".format(total))
@@ -21,11 +21,11 @@ class pnet(MainWindow):
                 where = self.buttons.index(button)
                 self.connected = not self.connected
 
-                text = pnet.connect_texts[int(self.connected)]
+                text = Pnet.connect_texts[int(self.connected)]
                 self.button_objects[where].configure(text=text)
 
                 ## create label ##
-                text = pnet.connect_texts[int(not self.connected)]
+                text = Pnet.connect_texts[int(not self.connected)]
                 self.label_connect.configure(text="{0} {1} the network".format(
                     text+"ed",
                     "to" if text[0] == "C" else "from"
@@ -43,9 +43,6 @@ class pnet(MainWindow):
     def onClose(self):
         if self.connected:
             self.onClick('connect')
-        if hasattr(self.connector, 'listener'):
-            if hasattr(self.connector.listener, 'close'):
-                self.connector.listener.con.close()
         if hasattr(self.connector.connection, 'con'):
             self.connector.connection.con.close()
         for chat in self.chats:
@@ -55,7 +52,7 @@ class pnet(MainWindow):
         terminate()
 
 if __name__ == "__main__":
-    network = pnet()
+    network = Pnet()
     network.total = 0
     network.connector = Connections(network)
     network.event = Events(network)
